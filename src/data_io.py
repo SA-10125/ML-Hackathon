@@ -18,7 +18,11 @@ from pyproj import Transformer
 
 _REPO = Path(__file__).resolve().parents[1]
 # dataset location: data/raw if present, else the "Student folder" committed at the repo root
-RAW = _REPO / "data" / "raw" if (_REPO / "data" / "raw").exists() else _REPO / "Student folder"
+# (the zip extracts either flat or nested as "Student folder/Student folder", depending on the tool)
+RAW = next((p for p in [_REPO / "data" / "raw",
+                        _REPO / "Student folder" / "Student folder",
+                        _REPO / "Student folder"] if (p / "train").exists()),
+           _REPO / "Student folder")
 
 
 @dataclass

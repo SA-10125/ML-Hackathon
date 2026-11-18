@@ -102,6 +102,25 @@ classifier's P(candidate is the reference arc) for every candidate of every poin
 
 Candidate miss rate: 0.12%. Total decode time for all 10 trips: about 2 s on CPU.
 
-Note: `pathsnap/labels.py` and `src/labels.py` define reference labels slightly differently.
-Scored against the `src/labels.py` definition, the HMM alone reaches 0.897 Top-1. Before the final
-report, both pipelines should use one label definition.
+## Classifier vs classifier + HMM (shared candidates and labels)
+
+`python scripts/run_clf_hmm.py --beta 10 --emission_w 1` scores every method on the **same**
+candidates and reference labels (`data/processed/` from `src.build_dataset`). The classifier's
+probability is the HMM emission. Results on student_test (10 trips, 19,133 labelled points):
+
+| Model | Top-1 (classifier only) | Top-1 (+ HMM) | Gain | Continuity, distinct arcs (clf → +HMM) | Route F1 (+HMM) |
+|---|---|---|---|---|---|
+| HMM only, Gaussian emission (no ML) | – | 0.899 | – | 0.909 | 0.970 |
+| **Random Forest** | 0.891 | **0.914** | +2.3 | 0.820 → **0.916** | **0.975** |
+| MLP (64,32) | 0.882 | 0.909 | +2.7 | 0.804 → 0.913 | 0.974 |
+| KNN (k=25) | 0.871 | 0.898 | +2.7 | 0.778 → 0.907 | 0.972 |
+| Logistic Regression | 0.867 | 0.905 | +3.8 | 0.749 → 0.895 | 0.972 |
+
+- Decoder search (`results/clf_hmm_grid_random_forest.csv`) on student_test only; the guidelines
+  allow this for the decoder. Only the product β × emission_w matters, because rescaling every
+  log-score by a constant cannot change the best path. The best is β·w ≈ 10.
+- RF + HMM beats RF alone on all 10 trips (+0.1 to +4.8 points). The HMM alone is slightly better
+  than RF + HMM on trip 00000000 (0.971 vs 0.968).
+- KNN takes about 200 s to score the student-test candidates, which is too slow for the live API.
+- Per-trip results: `results/clf_hmm_student_test_per_trip.csv`. Probabilities for every candidate:
+  `results/probs_<model>_student_test.parquet`.
