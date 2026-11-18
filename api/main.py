@@ -29,25 +29,15 @@ from pydantic import BaseModel
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+from src.data_io import RAW  # noqa: E402
 from src.pipeline import load_artifacts, predict_route, route_geometry, score_route  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s",
                     datefmt="%H:%M:%S")
 log = logging.getLogger("pathsnap")
 
-def _default_trips_dir():
-    """First student_test folder that actually contains trips (the dataset zip
-    sometimes unpacks as "Student folder/Student folder/...")."""
-    for c in [ROOT / "Student folder" / "student_test",
-              ROOT / "Student folder" / "Student folder" / "student_test",
-              ROOT / "data" / "raw" / "student_test"]:
-        if c.exists() and any(c.glob("*/*.track")):
-            return c
-    return ROOT / "Student folder" / "student_test"
-
-
-_env = os.environ.get("PATHSNAP_TRIPS_DIR")
-TRIPS_DIR = Path(_env) if _env else _default_trips_dir()
+# default: student_test inside the dataset folder found by data_io (flat or nested zip layout)
+TRIPS_DIR = Path(os.environ.get("PATHSNAP_TRIPS_DIR", RAW / "student_test"))
 if not TRIPS_DIR.is_absolute():
     TRIPS_DIR = ROOT / TRIPS_DIR
 ART = load_artifacts(os.environ.get("PATHSNAP_MODEL"))
