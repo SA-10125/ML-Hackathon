@@ -21,14 +21,27 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def load_artifacts(model_path=None, hmm_config=None):
+    """Model + decoder settings.
+
+    outputs/hmm/deployed_config.json (if present) names the model file and all decoder
+    settings chosen by src/tune_decoder.py; otherwise fall back to hmm_config.json
+    (beta, gap) with the tuned LightGBM.
+    """
     mdir = ROOT / "outputs" / "models"
-    if model_path is None:
-        tuned = mdir / "lightgbm_tuned.joblib"
-        model_path = tuned if tuned.exists() else mdir / "lightgbm.joblib"
-    cfg_path = Path(hmm_config or ROOT / "outputs" / "hmm" / "hmm_config.json")
+    hdir = ROOT / "outputs" / "hmm"
+    cfg_path = Path(hmm_config) if hmm_config else (
+        hdir / "deployed_config.json" if (hdir / "deployed_config.json").exists() else hdir / "hmm_config.json")
     cfg = json.load(open(cfg_path)) if cfg_path.exists() else {"beta": 3.0, "gap_s": 60.0}
-    return {"model": joblib.load(model_path), "model_path": str(model_path),
-            "beta": float(cfg["beta"]), "gap_s": float(cfg["gap_s"])}
+    if model_path is None:
+        if "model_file" in cfg:
+            model_path = mdir / cfg["model_file"]
+        else:
+            tuned = mdir / "lightgbm_tuned.joblib"
+            model_path = tuned if tuned.exists() else mdir / "lightgbm.joblib"
+    return {"model": joblib.load(model_path), "model_path": str(model_path), "config_path": str(cfg_path),
+            "beta": float(cfg["beta"]), "gap_s": float(cfg["gap_s"]),
+            "switch_penalty": float(cfg.get("switch_penalty", 0.0)),
+            "min_move": float(cfg.get("min_move", 0.0))}
 
 
 def predict_route(trip_dir: Path, trip_id: str, art):
@@ -38,7 +51,11 @@ def predict_route(trip_dir: Path, trip_id: str, art):
     assert trip.route is None  # ground truth must not enter the prediction path
     t1 = time.time()
     cands = build_features(trip).sort_values(["pt", "arc"]).reset_index(drop=True)
-    prob = art["model"].predict_proba(cands[FEATURES].values)[:, 1]
+    model = art["model"]
+    if hasattr(model, "predict_proba_trip"):   # two-stage model with context features
+        prob = model.predict_proba_trip(cands, trip.arcs)
+    else:
+        prob = model.predict_proba(cands[FEATURES].values)[:, 1]
     t2 = time.time()
 
     best = cands[["pt", "arc"]].assign(s=prob).groupby("pt").s.idxmax()
@@ -49,7 +66,8 @@ def predict_route(trip_dir: Path, trip_id: str, art):
     conf[cands.pt.values[best.values]] = prob[best.values]
 
     hmm_pred, breaks = viterbi(trip, cands, np.log(np.clip(prob, 1e-6, 1)),
-                               beta=art["beta"], gap_s=art["gap_s"])
+                               beta=art["beta"], gap_s=art["gap_s"],
+                               switch_penalty=art["switch_penalty"], min_move=art["min_move"])
     t3 = time.time()
     timing = {"load_s": t1 - t0, "features_and_classifier_s": t2 - t1, "viterbi_s": t3 - t2,
               "total_s": t3 - t0}

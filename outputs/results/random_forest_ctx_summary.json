@@ -1,0 +1,17 @@
+{
+  "model": "random_forest_ctx",
+  "config": "RF stage 1 (OOF on train) -> 11 context features -> RF stage 2 (same config)",
+  "cv_top1_stage1_oof": 0.8851411565819961,
+  "cv_top1_stage2_oof": 0.9080470323901291,
+  "cv_macro_f1": 0.9499693262175681,
+  "cv_macro_f1_std": 0.014703035561971712,
+  "test_top1_stage1": 0.8902942559974912,
+  "test_top1": 0.8959389536403073,
+  "test_accuracy": 0.976212534742219,
+  "test_precision": 0.9131114826600507,
+  "test_recall": 0.8855065641508447,
+  "test_macro_f1": 0.942807083424757,
+  "test_log_loss": 0.055636062404982166,
+  "train_time_s_stage2": 63.51585912704468,
+  "infer_ms_per_point": 0.08360029262391411
+}

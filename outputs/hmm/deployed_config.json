@@ -1,0 +1,14 @@
+{
+  "model_file": "random_forest.joblib",
+  "beta": 2.0,
+  "gap_s": 60.0,
+  "switch_penalty": 4.0,
+  "min_move": 0.0,
+  "chosen_by": "src/tune_decoder.py: max point-level Top-1 on 80 train trips with out-of-fold RF probabilities (outputs/hmm/random_forest_decoder_grid_train_oof*.csv)",
+  "train_oof_top1": 0.9454,
+  "student_test_top1": 0.9419,
+  "rejected": {
+    "random_forest_ctx (two-stage context RF)": "train OOF +0.08 pts (below fold std 1.3) -> not a real gain; simpler model kept",
+    "min_move stationary pooling": "no gain at 4 m, worse at 8-12 m on train OOF"
+  }
+}

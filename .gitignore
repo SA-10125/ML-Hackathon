@@ -1,19 +1,23 @@
 data/raw/
 data/processed/
+# evaluator trips: final demo only, never used in development, never committed
+evaluator_test/
 # large generated tables: regenerate with scripts/export_candidates.py
 data_processed/
+# rejected two-stage model (68 MB): regenerate with python -m src.train_context
+outputs/models/random_forest_ctx.joblib
 __pycache__/
 *.pyc
 .venv/
+.venv-api/
 .ipynb_checkpoints/
+outputs/tuning/optuna.db
 pathsnap.zip
 eda_update.zip
 lgbm_update.zip
 hmm_update.zip
-outputs/tuning/optuna.db
 api_update.zip
-deploy_section.md
 tuned_update.zip
 ui_update.zip
 final_update.zip
-.venv-api/
+deploy_section.md

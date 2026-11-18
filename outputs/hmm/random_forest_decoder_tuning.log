@@ -1,0 +1,70 @@
+  OOF fold 0: 16 trips, 46s
+  OOF fold 1: 16 trips, 44s
+  OOF fold 2: 16 trips, 43s
+  OOF fold 3: 16 trips, 85s
+  OOF fold 4: 16 trips, 74s
+grid: 80 decoder settings x 80 train trips (OOF probabilities)
+  decoded trip 1/80  decoded trip 2/80  decoded trip 3/80  decoded trip 4/80  decoded trip 5/80  decoded trip 6/80  decoded trip 7/80  decoded trip 8/80  decoded trip 9/80  decoded trip 10/80  decoded trip 11/80  decoded trip 12/80  decoded trip 13/80  decoded trip 14/80  decoded trip 15/80  decoded trip 16/80  decoded trip 17/80  decoded trip 18/80  decoded trip 19/80  decoded trip 20/80  decoded trip 21/80  decoded trip 22/80  decoded trip 23/80  decoded trip 24/80  decoded trip 25/80  decoded trip 26/80  decoded trip 27/80  decoded trip 28/80  decoded trip 29/80  decoded trip 30/80  decoded trip 31/80  decoded trip 32/80  decoded trip 33/80  decoded trip 34/80  decoded trip 35/80  decoded trip 36/80  decoded trip 37/80  decoded trip 38/80  decoded trip 39/80  decoded trip 40/80  decoded trip 41/80  decoded trip 42/80  decoded trip 43/80  decoded trip 44/80  decoded trip 45/80  decoded trip 46/80  decoded trip 47/80  decoded trip 48/80  decoded trip 49/80  decoded trip 50/80  decoded trip 51/80  decoded trip 52/80  decoded trip 53/80  decoded trip 54/80  decoded trip 55/80  decoded trip 56/80  decoded trip 57/80  decoded trip 58/80  decoded trip 59/80  decoded trip 60/80  decoded trip 61/80  decoded trip 62/80  decoded trip 63/80  decoded trip 64/80  decoded trip 65/80  decoded trip 66/80  decoded trip 67/80  decoded trip 68/80  decoded trip 69/80  decoded trip 70/80  decoded trip 71/80  decoded trip 72/80  decoded trip 73/80  decoded trip 74/80  decoded trip 75/80  decoded trip 76/80  decoded trip 77/80  decoded trip 78/80  decoded trip 79/80  decoded trip 80/80
+grid done in 176s
+ beta  switch_penalty  min_move   top1  continuity  breaks  top1_fold0  top1_fold1  top1_fold2  top1_fold3  top1_fold4  top1_fold_std
+  2.0             4.0       0.0 0.9454      0.9701   128.0      0.9396      0.9566      0.9507      0.9585      0.9276         0.0129
+  2.0             2.0       4.0 0.9448      0.9725   128.0      0.9413      0.9578      0.9490      0.9602      0.9221         0.0154
+  2.0             1.0       4.0 0.9446      0.9726   128.0      0.9407      0.9590      0.9468      0.9604      0.9226         0.0155
+  2.0             0.5       0.0 0.9443      0.9729   128.0      0.9377      0.9475      0.9496      0.9618      0.9301         0.0121
+  2.0             1.0       0.0 0.9443      0.9728   128.0      0.9380      0.9479      0.9497      0.9621      0.9289         0.0126
+  2.0             2.0       0.0 0.9441      0.9728   128.0      0.9376      0.9465      0.9503      0.9623      0.9292         0.0126
+  2.0             0.0       0.0 0.9433      0.9725   128.0      0.9363      0.9469      0.9483      0.9611      0.9294         0.0122
+  2.0             0.0       4.0 0.9429      0.9726   128.0      0.9396      0.9459      0.9444      0.9595      0.9298         0.0108
+  3.0             2.0       4.0 0.9428      0.9733   128.0      0.9315      0.9469      0.9507      0.9608      0.9303         0.0130
+  2.0             4.0       4.0 0.9426      0.9697   128.0      0.9398      0.9521      0.9491      0.9568      0.9208         0.0142
+best on train OOF: {'beta': 2.0, 'switch_penalty': 4.0, 'min_move': 0.0} top1=0.9454 | baseline top1=0.9396
+  decoded trip 1/10  decoded trip 2/10  decoded trip 3/10  decoded trip 4/10  decoded trip 5/10  decoded trip 6/10  decoded trip 7/10  decoded trip 8/10  decoded trip 9/10  decoded trip 10/10
+{
+  "model": "random_forest",
+  "gap_s": 60.0,
+  "grid": {
+    "beta": [
+      2.0,
+      3.0,
+      5.0,
+      8.0
+    ],
+    "switch_penalty": [
+      0.0,
+      0.5,
+      1.0,
+      2.0,
+      4.0
+    ],
+    "min_move": [
+      0.0,
+      4.0,
+      8.0,
+      12.0
+    ]
+  },
+  "selection": "max Top-1 on 80 train trips, out-of-fold",
+  "best": {
+    "beta": 2.0,
+    "switch_penalty": 4.0,
+    "min_move": 0.0
+  },
+  "baseline": {
+    "beta": 3.0,
+    "switch_penalty": 0.0,
+    "min_move": 0.0
+  },
+  "train_oof": {
+    "classifier_only_top1": 0.8851411565819961,
+    "baseline_top1": 0.9396107999503103,
+    "tuned_top1": 0.945411533413629,
+    "tuned_top1_fold_std": 0.012917625485890507
+  },
+  "student_test": {
+    "classifier_only_top1": 0.8902942559974912,
+    "baseline_top1": 0.9392149689018973,
+    "tuned_top1": 0.9418805205665604,
+    "baseline_continuity": 0.9788961311402596,
+    "tuned_continuity": 0.9727392949944381
+  }
+}

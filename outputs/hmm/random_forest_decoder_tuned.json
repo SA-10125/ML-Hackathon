@@ -1,0 +1,49 @@
+{
+  "model": "random_forest",
+  "gap_s": 60.0,
+  "grid": {
+    "beta": [
+      2.0,
+      3.0,
+      5.0,
+      8.0
+    ],
+    "switch_penalty": [
+      0.0,
+      0.5,
+      1.0,
+      2.0,
+      4.0
+    ],
+    "min_move": [
+      0.0,
+      4.0,
+      8.0,
+      12.0
+    ]
+  },
+  "selection": "max Top-1 on 80 train trips, out-of-fold",
+  "best": {
+    "beta": 2.0,
+    "switch_penalty": 4.0,
+    "min_move": 0.0
+  },
+  "baseline": {
+    "beta": 3.0,
+    "switch_penalty": 0.0,
+    "min_move": 0.0
+  },
+  "train_oof": {
+    "classifier_only_top1": 0.8851411565819961,
+    "baseline_top1": 0.9396107999503103,
+    "tuned_top1": 0.945411533413629,
+    "tuned_top1_fold_std": 0.012917625485890507
+  },
+  "student_test": {
+    "classifier_only_top1": 0.8902942559974912,
+    "baseline_top1": 0.9392149689018973,
+    "tuned_top1": 0.9418805205665604,
+    "baseline_continuity": 0.9788961311402596,
+    "tuned_continuity": 0.9727392949944381
+  }
+}

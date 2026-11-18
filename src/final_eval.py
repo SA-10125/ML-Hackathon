@@ -1,4 +1,4 @@
-"""Final pipeline (tuned LightGBM + HMM) on student-test: per-trip results, what the HMM
+"""Final pipeline (the DEPLOYED model + decoder, same as the API) on student-test: per-trip results, what the HMM
 fixed vs broke, and Folium maps with every layer the report asks for.
 
   python -m src.final_eval
@@ -17,11 +17,12 @@ from .data_io import load_trip
 from .eval_hmm import classifier_only, trip_metrics
 from .features import FEATURES
 from .hmm import viterbi
+from .pipeline import load_artifacts
 
 ROOT = Path(__file__).resolve().parents[1]
 PROC = ROOT / "data" / "processed"
 OUT = ROOT / "outputs" / "final"
-MODEL = "lightgbm_tuned"
+# model and decoder settings come from the same loader as the API (outputs/hmm/deployed_config.json)
 
 
 def folium_map(trip, cls, hmm, ref, title, path):
@@ -77,8 +78,9 @@ def folium_map(trip, cls, hmm, ref, title, path):
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "maps").mkdir(exist_ok=True)
-    model = joblib.load(ROOT / "outputs" / "models" / f"{MODEL}.joblib")
-    cfg = json.load(open(ROOT / "outputs" / "hmm" / "hmm_config.json"))
+    cfg = load_artifacts()
+    model = cfg["model"]
+    print("model", Path(cfg["model_path"]).name, "beta", cfg["beta"], "switch_penalty", cfg["switch_penalty"])
     C = pd.read_parquet(PROC / "student_test_cands.parquet")
     P = pd.read_parquet(PROC / "student_test_points.parquet")
     rows, keep = [], {}
@@ -88,7 +90,8 @@ def main():
         ref = P[P.trip == tid].sort_values("pt").ref.values
         prob = model.predict_proba(c[FEATURES].values)[:, 1]
         cls = classifier_only(c, prob, len(ref))
-        hmm, nb = viterbi(trip, c, np.log(np.clip(prob, 1e-6, 1)), beta=cfg["beta"], gap_s=cfg["gap_s"])
+        hmm, nb = viterbi(trip, c, np.log(np.clip(prob, 1e-6, 1)), beta=cfg["beta"], gap_s=cfg["gap_s"],
+                       switch_penalty=cfg["switch_penalty"], min_move=cfg["min_move"])
         ok = ref >= 0
         changed = ok & (cls != hmm)
         mc, mh = trip_metrics(trip, cls, ref), trip_metrics(trip, hmm, ref)

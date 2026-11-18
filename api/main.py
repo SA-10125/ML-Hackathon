@@ -41,8 +41,9 @@ TRIPS_DIR = Path(os.environ.get("PATHSNAP_TRIPS_DIR", RAW / "student_test"))
 if not TRIPS_DIR.is_absolute():
     TRIPS_DIR = ROOT / TRIPS_DIR
 ART = load_artifacts(os.environ.get("PATHSNAP_MODEL"))
-log.info("model=%s beta=%.1f gap=%.0fs trips_dir=%s", ART["model_path"], ART["beta"],
-         ART["gap_s"], TRIPS_DIR)
+log.info("model=%s beta=%.1f gap=%.0fs switch_penalty=%.1f min_move=%.0fm config=%s trips_dir=%s",
+         ART["model_path"], ART["beta"], ART["gap_s"], ART["switch_penalty"], ART["min_move"],
+         ART["config_path"], TRIPS_DIR)
 
 app = FastAPI(title="PathSnap API")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -62,7 +63,8 @@ def available_trips():
 @app.get("/health")
 def health():
     return {"status": "ok", "model": Path(ART["model_path"]).name, "beta": ART["beta"],
-            "gap_s": ART["gap_s"], "trips_dir": str(TRIPS_DIR), "n_trips": len(available_trips())}
+            "gap_s": ART["gap_s"], "switch_penalty": ART["switch_penalty"], "min_move": ART["min_move"],
+            "trips_dir": str(TRIPS_DIR), "n_trips": len(available_trips())}
 
 
 @app.get("/trips")
