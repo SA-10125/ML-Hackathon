@@ -1,0 +1,13 @@
+numpy
+pandas
+pyarrow
+scipy
+scikit-learn
+shapely>=2.0
+pyproj
+lightgbm
+optuna
+folium
+joblib
+fastapi
+uvicorn

@@ -1,0 +1,19 @@
+{
+  "model": "random_forest",
+  "family": "Ensemble (bagging)",
+  "config": "RandomForest(n_estimators=100, max_features='sqrt', min_samples_leaf=5)",
+  "cv_macro_f1": 0.9278043224032151,
+  "cv_macro_f1_std": 0.012573825287707605,
+  "cv_top1": 0.8814390675911257,
+  "cv_log_loss": 0.08133316163351316,
+  "train_macro_f1": 0.9657527359167318,
+  "test_accuracy": 0.9726882339685003,
+  "test_precision": 0.898552290406223,
+  "test_recall": 0.8700245828756734,
+  "test_macro_f1": 0.9342896573787409,
+  "test_log_loss": 0.06795554744885282,
+  "test_top1": 0.8902942559974912,
+  "test_continuity": 0.9523177535208849,
+  "train_time_s": 224.3965036869049,
+  "infer_ms_per_point": 0.047573416118582006
+}

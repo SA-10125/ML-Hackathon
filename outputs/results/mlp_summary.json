@@ -1,0 +1,20 @@
+{
+  "model": "mlp",
+  "family": "Neural network",
+  "config": "MLP(64,32), ReLU, Adam lr=1e-3, alpha=1e-4, batch=512, early stop patience=6, 300k-row sample",
+  "cv_macro_f1": 0.9236038943268262,
+  "cv_macro_f1_std": 0.012785121919200868,
+  "cv_top1": 0.8777978139850701,
+  "cv_log_loss": 0.0850597663939965,
+  "train_macro_f1": 0.9308101495383734,
+  "test_accuracy": 0.9700027543380825,
+  "test_precision": 0.8800063657100419,
+  "test_recall": 0.867670903289921,
+  "test_macro_f1": 0.9283867914785222,
+  "test_log_loss": 0.07281088134455595,
+  "test_top1": 0.8820885381278419,
+  "test_continuity": 0.9482241776086061,
+  "train_time_s": 21.31264352798462,
+  "infer_ms_per_point": 0.00381049134288302,
+  "best_epoch": 33
+}
