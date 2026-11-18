@@ -42,7 +42,7 @@ def main():
     near = fill_unmatched(pipeline.nearest_arc(ctx.cands))
 
     lat, lon = tr.lonlat[:, 1], tr.lonlat[:, 0]
-    m = folium.Map(location=[lat.mean(), lon.mean()], tiles="OpenStreetMap",control_scale=True)
+    m = folium.Map(location=[lat.mean(), lon.mean()], tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", attr="Tiles &copy; Esri",control_scale=True)
     m.fit_bounds([[lat.min(), lon.min()], [lat.max(), lon.max()]])
 
     # road network around the track (arcs whose midpoint is within 150 m of the track's bounding box)

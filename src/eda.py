@@ -209,7 +209,7 @@ def make_plots(inv, dts, speeds, refd, rad):
 def trip_map(tid, part, title):
     trip = load_trip(tid, part)
     lat, lon = trip.track_ll[:, 1], trip.track_ll[:, 0]
-    m = folium.Map(location=[lat.mean(), lon.mean()], zoom_start=14, tiles="OpenStreetMap")
+    m = folium.Map(location=[lat.mean(), lon.mean()], zoom_start=14, tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", attr="Tiles &copy; Esri")
     ll = trip.nodes_ll[:, ::-1]
     seg = lambda a: [ll[trip.arcs[a, 0]].tolist(), ll[trip.arcs[a, 1]].tolist()]
     # only arcs within 150 m of the GPS track (a bounding box explodes on long trips)
@@ -244,7 +244,7 @@ def trip_map(tid, part, title):
 
 
 def overview_map(inv):
-    m = folium.Map(location=[30, 0], zoom_start=2, tiles="OpenStreetMap")
+    m = folium.Map(location=[30, 0], zoom_start=2, tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", attr="Tiles &copy; Esri")
     for _, r in inv.iterrows():
         folium.CircleMarker([r.lat_c, r.lon_c], radius=5, color=COLORS[r.partition], fill=True,
                             tooltip=f"{r.partition} {r.trip}: {r.n_points} pts, "

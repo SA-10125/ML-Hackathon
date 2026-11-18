@@ -29,8 +29,8 @@ def folium_map(trip, cls, hmm, ref, title, path):
     ll = trip.nodes_ll[:, ::-1]
     seg = lambda a: [ll[trip.arcs[a, 0]].tolist(), ll[trip.arcs[a, 1]].tolist()]
     m = folium.Map(tiles=None)
-    folium.TileLayer("OpenStreetMap", name="OpenStreetMap").add_to(m)
-    folium.TileLayer("CartoDB positron", name="Light basemap").add_to(m)
+    folium.TileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", attr="Tiles &copy; Esri", name="Streets (Esri)").add_to(m)
+    folium.TileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", attr="Tiles &copy; Esri", name="Light basemap (Esri)").add_to(m)
 
     tree = STRtree(shapely.linestrings(np.stack([trip.arc_a, trip.arc_b], axis=1)))
     _, near = tree.query(shapely.points(trip.xy[::5]), predicate="dwithin", distance=150)

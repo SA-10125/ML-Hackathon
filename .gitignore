@@ -16,3 +16,4 @@ deploy_section.md
 tuned_update.zip
 ui_update.zip
 final_update.zip
+.venv-api/
