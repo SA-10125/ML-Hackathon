@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
+# large generated tables: regenerate with scripts/export_candidates.py
+data_processed/
