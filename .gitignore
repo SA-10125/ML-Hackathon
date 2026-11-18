@@ -6,3 +6,7 @@ __pycache__/
 pathsnap.zip
 eda_update.zip
 lgbm_update.zip
+hmm_update.zip
+outputs/tuning/optuna.db
+api_update.zip
+deploy_section.md

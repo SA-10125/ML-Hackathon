@@ -28,6 +28,9 @@ python -m src.viz_map --trip 00000065 --pred outputs/results/logreg_student_test
 | `src/train.py` | GroupKFold-by-trip CV, student-test evaluation, result logging |
 | `src/metrics.py` | Row metrics, observation-level Top-1, route continuity |
 | `src/feature_analysis.py` | Feature distributions, rule baselines, LightGBM importance |
+| `src/hmm.py` | HMM + Viterbi decoder (emissions = classifier, transitions = network vs GPS distance) |
+| `src/eval_hmm.py` | Decoder tuning on held-out train trips; classifier-only vs HMM on student-test |
+| `src/tune.py` | Optuna (TPE) Bayesian optimisation of LightGBM |
 | `src/plot_results.py` | Comparison plots + MLP loss curve |
 | `src/viz_map.py` | Folium maps (GPS, road network, reference, prediction) |
 | `outputs/results/` | `model_comparison.csv`, per-fold CV scores, predictions |
@@ -54,3 +57,34 @@ python -m src.viz_map --trip 00000065 --pred outputs/results/logreg_student_test
 
 Plots: `python -m src.plot_results` → `outputs/figures/`.
 Models are saved xz-compressed (uncompressed random forest is ~260 MB, over GitHub's limit).
+
+## Route reconstruction (student-test, LightGBM, beta=3 tuned on held-out train trips)
+| | Top-1 | Continuity | Route F1 |
+|---|---|---|---|
+| Classifier only | 0.891 | 0.953 | 0.900 |
+| Classifier + HMM | **0.925** | **0.979** | **0.935** |
+
+## Deployment (two laptops)
+
+**Laptop 1: API**
+```bash
+pip install -r requirements.txt
+# development: serves the 10 student_test trips
+uvicorn api.main:app --host 0.0.0.0 --port 8000
+# evaluation day: point it at the evaluator trips folder (one sub-folder per trip id)
+PATHSNAP_TRIPS_DIR="/path/to/evaluator_trips" uvicorn api.main:app --host 0.0.0.0 --port 8000
+```
+Find Laptop 1's IP: `ipconfig getifaddr en0` (macOS) or `ipconfig` (Windows). Every request
+and its server-side accuracy is logged in this terminal.
+
+**Laptop 2: UI**
+```bash
+cd ui
+python3 -m http.server 5500
+```
+Open `http://localhost:5500`, enter `http://<laptop-1-ip>:8000`, click Connect, choose a trip,
+click Reconstruct route.
+
+**Endpoints:** `GET /health`, `GET /trips`, `POST /predict {"trip_id": "..."}`.
+Reference routes stay on the API server; the UI receives only the GPS track, the predicted
+route and aggregate metrics.

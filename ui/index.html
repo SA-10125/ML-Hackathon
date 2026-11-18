@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PathSnap — Route Reconstruction</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --bg: #0f1216; --panel: #161a20; --line: #262c35; --text: #e6e8eb; --muted: #8b939e;
+    --accent: #3ddc97; --cls: #f5a524; --gps: #5aa9ff; --bad: #ff5d5d;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; }
+  .app { display: grid; grid-template-columns: 340px 1fr; height: 100vh; }
+  aside { background: var(--panel); border-right: 1px solid var(--line); padding: 20px;
+    overflow-y: auto; display: flex; flex-direction: column; gap: 22px; }
+  h1 { font-size: 18px; margin: 0; letter-spacing: .2px; }
+  h1 span { color: var(--accent); }
+  .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .8px;
+    color: var(--muted); margin-bottom: 8px; }
+  .row { display: flex; gap: 8px; }
+  input { flex: 1; background: var(--bg); border: 1px solid var(--line); color: var(--text);
+    padding: 9px 10px; border-radius: 8px; font: 13px var(--mono); outline: none; }
+  input:focus { border-color: var(--accent); }
+  button { background: var(--line); color: var(--text); border: 0; padding: 9px 12px;
+    border-radius: 8px; font-weight: 600; cursor: pointer; }
+  button:hover { filter: brightness(1.2); }
+  button.primary { background: var(--accent); color: #062b1c; width: 100%; padding: 12px; font-size: 14px; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .status { font: 12px var(--mono); color: var(--muted); margin-top: 8px; display: flex;
+    align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .dot.ok { background: var(--accent); } .dot.err { background: var(--bad); }
+  .trips { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .trip { background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+    padding: 9px; font: 13px var(--mono); text-align: center; cursor: pointer; color: var(--text); }
+  .trip.sel { border-color: var(--accent); color: var(--accent); }
+  .trip.done::after { content: " ✓"; color: var(--muted); }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .card { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .card .k { font-size: 11px; color: var(--muted); }
+  .card .v { font: 600 20px var(--mono); margin-top: 2px; }
+  .card .d { font: 11px var(--mono); color: var(--muted); }
+  .card.hero { grid-column: span 2; }
+  .card.hero .v { font-size: 30px; color: var(--accent); }
+  .up { color: var(--accent) !important; }
+  .legend div { display: flex; align-items: center; gap: 8px; margin: 6px 0; cursor: pointer; user-select: none; }
+  .legend .sw { width: 22px; height: 4px; border-radius: 2px; }
+  .legend .off { opacity: .35; }
+  .meta { font: 11px var(--mono); color: var(--muted); white-space: pre-wrap; }
+  #map { height: 100vh; background: #0b0d10; }
+  .overlay { position: absolute; inset: 0; display: none; place-items: center; z-index: 1000;
+    background: rgba(15,18,22,.55); font: 14px var(--mono); color: var(--text); pointer-events: none; }
+  .overlay.on { display: grid; }
+  .wrap { position: relative; }
+  .err { color: var(--bad); font: 12px var(--mono); }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div>
+      <h1>Path<span>Snap</span></h1>
+      <div class="sub">Map-matching · LightGBM + HMM/Viterbi</div>
+    </div>
+
+    <div>
+      <label>API (Laptop 1)</label>
+      <div class="row">
+        <input id="api" spellcheck="false">
+        <button id="connect">Connect</button>
+      </div>
+      <div class="status"><span class="dot" id="dot"></span><span id="status">not connected</span></div>
+    </div>
+
+    <div>
+      <label>Evaluation trips</label>
+      <div class="trips" id="trips"><div class="meta">Connect to load trips</div></div>
+    </div>
+
+    <button class="primary" id="run" disabled>Reconstruct route</button>
+    <div class="err" id="err"></div>
+
+    <div id="results" style="display:none">
+      <label>Results (computed on the API server)</label>
+      <div class="cards">
+        <div class="card hero"><div class="k">Top-1 accuracy · HMM</div><div class="v" id="m-top1">–</div>
+          <div class="d" id="m-top1-cls">–</div></div>
+        <div class="card"><div class="k">Route continuity</div><div class="v" id="m-cont">–</div><div class="d" id="m-cont-cls"></div></div>
+        <div class="card"><div class="k">Route F1</div><div class="v" id="m-f1">–</div><div class="d" id="m-f1-cls"></div></div>
+        <div class="card"><div class="k">GPS points</div><div class="v" id="m-n">–</div><div class="d" id="m-cands"></div></div>
+        <div class="card"><div class="k">API time</div><div class="v" id="m-t">–</div><div class="d" id="m-tv"></div></div>
+      </div>
+    </div>
+
+    <div class="legend" id="legend">
+      <label>Layers</label>
+      <div data-layer="hmm"><span class="sw" style="background:var(--accent)"></span>Predicted route (HMM)</div>
+      <div data-layer="cls" class="off"><span class="sw" style="background:var(--cls)"></span>Classifier only (no HMM)</div>
+      <div data-layer="gps"><span class="sw" style="background:var(--gps)"></span>Raw GPS</div>
+    </div>
+
+    <div class="meta" id="meta"></div>
+  </aside>
+
+  <div class="wrap">
+    <div id="map"></div>
+    <div class="overlay" id="overlay">running pipeline on API…</div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const pct = x => x == null ? "–" : (100 * x).toFixed(1) + "%";
+let api = localStorage.getItem("pathsnap_api") || `http://${location.hostname || "localhost"}:8000`;
+$("api").value = api;
+
+const map = L.map("map", { preferCanvas: true }).setView([30, 0], 2);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  { maxZoom: 19, attribution: "© OpenStreetMap contributors" }).addTo(map);
+const layers = { hmm: L.layerGroup().addTo(map), cls: L.layerGroup(), gps: L.layerGroup().addTo(map) };
+
+let selected = null;
+
+async function connect() {
+  api = $("api").value.trim().replace(/\/$/, "");
+  try { localStorage.setItem("pathsnap_api", api); } catch (e) {}
+  $("dot").className = "dot"; $("status").textContent = "connecting…"; $("err").textContent = "";
+  try {
+    const h = await (await fetch(`${api}/health`)).json();
+    const t = await (await fetch(`${api}/trips`)).json();
+    $("dot").className = "dot ok";
+    $("status").textContent = `${h.model} · β=${h.beta} · ${t.trips.length} trips`;
+    renderTrips(t.trips);
+  } catch (e) {
+    $("dot").className = "dot err";
+    $("status").textContent = "cannot reach API";
+    $("err").textContent = "Check the IP, that uvicorn runs with --host 0.0.0.0, and both laptops share a network.";
+  }
+}
+
+function renderTrips(ids) {
+  $("trips").innerHTML = "";
+  ids.forEach(id => {
+    const b = document.createElement("div");
+    b.className = "trip"; b.textContent = id; b.dataset.id = id;
+    b.onclick = () => {
+      document.querySelectorAll(".trip").forEach(x => x.classList.remove("sel"));
+      b.classList.add("sel"); selected = id; $("run").disabled = false;
+    };
+    $("trips").appendChild(b);
+  });
+}
+
+async function run() {
+  if (!selected) return;
+  $("run").disabled = true; $("overlay").classList.add("on"); $("err").textContent = "";
+  try {
+    const r = await fetch(`${api}/predict`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ trip_id: selected }) });
+    if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
+    draw(await r.json());
+    document.querySelector(`.trip[data-id="${selected}"]`).classList.add("done");
+  } catch (e) {
+    $("err").textContent = "Request failed: " + e.message;
+  } finally {
+    $("run").disabled = false; $("overlay").classList.remove("on");
+  }
+}
+
+function draw(d) {
+  Object.values(layers).forEach(l => l.clearLayers());
+  d.gps.forEach(p => L.circleMarker(p, { radius: 2, stroke: false, fillColor: "#5aa9ff",
+    fillOpacity: .75 }).addTo(layers.gps));
+  d.route_classifier.forEach(l => L.polyline(l, { color: "#f5a524", weight: 3, opacity: .9 }).addTo(layers.cls));
+  d.route_hmm.forEach(l => L.polyline(l, { color: "#3ddc97", weight: 5, opacity: .9 }).addTo(layers.hmm));
+  L.circleMarker(d.gps[0], { radius: 7, color: "#fff", fillColor: "#3ddc97", fillOpacity: 1 })
+    .bindTooltip("Start").addTo(layers.gps);
+  L.circleMarker(d.gps[d.gps.length - 1], { radius: 7, color: "#fff", fillColor: "#ff5d5d", fillOpacity: 1 })
+    .bindTooltip("End").addTo(layers.gps);
+  map.fitBounds(L.latLngBounds(d.gps), { padding: [30, 30] });
+
+  const h = d.metrics.hmm, c = d.metrics.classifier_only;
+  $("results").style.display = "block";
+  if (h) {
+    $("m-top1").textContent = pct(h.top1_accuracy);
+    const gain = (h.top1_accuracy - c.top1_accuracy) * 100;
+    $("m-top1-cls").innerHTML = `classifier only ${pct(c.top1_accuracy)} · <span class="up">${gain >= 0 ? "+" : ""}${gain.toFixed(1)} pts</span>`;
+    $("m-cont").textContent = pct(h.route_continuity); $("m-cont-cls").textContent = `cls ${pct(c.route_continuity)}`;
+    $("m-f1").textContent = pct(h.route_f1); $("m-f1-cls").textContent = `cls ${pct(c.route_f1)}`;
+  } else {
+    $("m-top1").textContent = "n/a"; $("m-top1-cls").textContent = "no reference route on server";
+  }
+  $("m-n").textContent = d.n_points.toLocaleString();
+  $("m-cands").textContent = `${d.n_candidates.toLocaleString()} candidates`;
+  $("m-t").textContent = d.timing.request_s.toFixed(2) + "s";
+  $("m-tv").textContent = `viterbi ${d.timing.viterbi_s.toFixed(2)}s`;
+  $("meta").textContent = `trip ${d.trip_id}\nmodel ${d.model}\nHMM chain breaks ${d.hmm_chain_breaks}\npoints without candidates ${d.points_without_candidates}`;
+}
+
+document.querySelectorAll("#legend [data-layer]").forEach(el => {
+  el.onclick = () => {
+    const l = layers[el.dataset.layer];
+    if (map.hasLayer(l)) { map.removeLayer(l); el.classList.add("off"); }
+    else { map.addLayer(l); el.classList.remove("off"); }
+  };
+});
+$("connect").onclick = connect;
+$("run").onclick = run;
+$("api").addEventListener("keydown", e => { if (e.key === "Enter") connect(); });
+connect();
+</script>
+</body>
+</html>
