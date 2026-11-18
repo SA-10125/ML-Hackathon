@@ -12,6 +12,7 @@ pip install -r requirements.txt
 
 ## Pipeline
 ```bash
+python -m src.eda                      # EDA: inventory, plots, data-quality record, Folium maps -> outputs/eda/
 python -m src.build_dataset            # labels + candidates + features -> data/processed/
 python -m src.train --model logreg     # CV on train, eval on student_test -> outputs/
 python -m src.viz_map --trip 00000065 --pred outputs/results/logreg_student_test_top1.csv
@@ -20,6 +21,7 @@ python -m src.viz_map --trip 00000065 --pred outputs/results/logreg_student_test
 ## Layout
 | Path | Purpose |
 |---|---|
+| `src/eda.py` | Dataset inventory, quality checks, EDA plots and Folium maps |
 | `src/data_io.py` | Load raw files; project each trip to its own UTM zone (metres) |
 | `src/labels.py` | Monotonic DP alignment of GPS points to the ordered `.route` → per-point reference arc |
 | `src/features.py` | Candidate generation (arcs within 40 m, STRtree) + features |

@@ -1,0 +1,3 @@
+partition,trips,total_points,median_points,min_points,max_points,median_duration_min,trips_gap_gt60s,median_nodes,median_arcs,median_route_km,median_gps_to_ref_m,nan_rows
+student_test,10,19160,1420.0,262,3958,30.158333333333335,1,6596.5,13145.0,14.76318676089399,4.748282227832217,0
+train,80,208417,1529.0,361,19313,28.500024999999997,22,9608.0,19526.5,14.313773455914548,4.636442502296431,0
