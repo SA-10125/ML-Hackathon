@@ -22,7 +22,7 @@ def arc_lines(trip, arc_ids):
 def make_map(trip_id, part, pred_csv=None, label="prediction"):
     trip = load_trip(trip_id, part)
     lat, lon = trip.track_ll[:, 1], trip.track_ll[:, 0]
-    m = folium.Map(location=[lat.mean(), lon.mean()], zoom_start=14, tiles="OpenStreetMap")
+    m = folium.Map(location=[lat.mean(), lon.mean()], zoom_start=14, tiles="cartodbpositron")
 
     # road network: only arcs near the trajectory bounding box, to keep the file small
     pad = 0.003

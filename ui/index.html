@@ -4,61 +4,92 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PathSnap — Route Reconstruction</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Ccircle cx=%228%22 cy=%228%22 r=%226%22 fill=%22%233ddc97%22/%3E%3C/svg%3E">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<script src="vendor/leaflet/leaflet.js"></script>
 <style>
   :root {
-    --bg: #0f1216; --panel: #161a20; --line: #262c35; --text: #e6e8eb; --muted: #8b939e;
-    --accent: #3ddc97; --cls: #f5a524; --gps: #5aa9ff; --bad: #ff5d5d;
-    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --bg: #0d1014; --panel: #14181e; --panel2: #1a1f27; --line: #262d37; --text: #e7e9ec;
+    --muted: #8a929d; --accent: #3ddc97; --cls: #f5a524; --gps: #5aa9ff; --fix: #ff4fd8;
+    --bad: #ff5d5d; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
     font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; }
-  .app { display: grid; grid-template-columns: 340px 1fr; height: 100vh; }
-  aside { background: var(--panel); border-right: 1px solid var(--line); padding: 20px;
-    overflow-y: auto; display: flex; flex-direction: column; gap: 22px; }
-  h1 { font-size: 18px; margin: 0; letter-spacing: .2px; }
+  .app { display: grid; grid-template-columns: 360px 1fr; height: 100vh; }
+  aside { background: var(--panel); border-right: 1px solid var(--line); padding: 18px 18px 30px;
+    overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+  h1 { font-size: 19px; margin: 0; letter-spacing: .2px; }
   h1 span { color: var(--accent); }
   .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
-  label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .8px;
+  label, .lbl { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .8px;
     color: var(--muted); margin-bottom: 8px; }
   .row { display: flex; gap: 8px; }
-  input { flex: 1; background: var(--bg); border: 1px solid var(--line); color: var(--text);
-    padding: 9px 10px; border-radius: 8px; font: 13px var(--mono); outline: none; }
-  input:focus { border-color: var(--accent); }
-  button { background: var(--line); color: var(--text); border: 0; padding: 9px 12px;
-    border-radius: 8px; font-weight: 600; cursor: pointer; }
-  button:hover { filter: brightness(1.2); }
-  button.primary { background: var(--accent); color: #062b1c; width: 100%; padding: 12px; font-size: 14px; }
+  input[type=text] { flex: 1; background: var(--bg); border: 1px solid var(--line); color: var(--text);
+    padding: 9px 10px; border-radius: 8px; font: 13px var(--mono); outline: none; min-width: 0; }
+  input[type=text]:focus { border-color: var(--accent); }
+  button { background: var(--line); color: var(--text); border: 0; padding: 9px 12px; border-radius: 8px;
+    font-weight: 600; cursor: pointer; font-size: 13px; }
+  button:hover:not(:disabled) { filter: brightness(1.25); }
   button:disabled { opacity: .45; cursor: not-allowed; }
-  .status { font: 12px var(--mono); color: var(--muted); margin-top: 8px; display: flex;
-    align-items: center; gap: 6px; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
-  .dot.ok { background: var(--accent); } .dot.err { background: var(--bad); }
+  .primary { background: var(--accent); color: #062b1c; }
+  .btns { display: grid; grid-template-columns: 1.4fr 1fr; gap: 8px; }
+  .btns button { padding: 12px; }
+  .status { font: 12px var(--mono); color: var(--muted); margin-top: 8px; display: flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
+  .dot.ok { background: var(--accent); box-shadow: 0 0 8px var(--accent); } .dot.err { background: var(--bad); }
   .trips { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-  .trip { background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
-    padding: 9px; font: 13px var(--mono); text-align: center; cursor: pointer; color: var(--text); }
+  .trip { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+    font: 13px var(--mono); cursor: pointer; display: flex; justify-content: space-between; }
+  .trip:hover { border-color: #3a4350; }
   .trip.sel { border-color: var(--accent); color: var(--accent); }
-  .trip.done::after { content: " ✓"; color: var(--muted); }
+  .trip .acc { color: var(--muted); font-size: 11px; }
   .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .card { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
   .card .k { font-size: 11px; color: var(--muted); }
-  .card .v { font: 600 20px var(--mono); margin-top: 2px; }
+  .card .v { font: 600 19px var(--mono); margin-top: 2px; }
   .card .d { font: 11px var(--mono); color: var(--muted); }
-  .card.hero { grid-column: span 2; }
-  .card.hero .v { font-size: 30px; color: var(--accent); }
+  .card.hero { grid-column: span 2; display: grid; grid-template-columns: 1fr auto; align-items: end; }
+  .card.hero .v { font-size: 32px; color: var(--accent); }
+  .bar { height: 6px; border-radius: 3px; background: var(--line); margin-top: 8px; position: relative; overflow: hidden; grid-column: span 2; }
+  .bar i { position: absolute; inset: 0 auto 0 0; border-radius: 3px; }
   .up { color: var(--accent) !important; }
-  .legend div { display: flex; align-items: center; gap: 8px; margin: 6px 0; cursor: pointer; user-select: none; }
-  .legend .sw { width: 22px; height: 4px; border-radius: 2px; }
-  .legend .off { opacity: .35; }
+  .layers div { display: flex; align-items: center; gap: 10px; padding: 6px 8px; margin: 2px -8px;
+    border-radius: 6px; cursor: pointer; user-select: none; }
+  .layers div:hover { background: var(--panel2); }
+  .layers .sw { width: 22px; height: 4px; border-radius: 2px; flex: none; }
+  .layers .ring { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--fix); margin: 0 6px; flex: none; }
+  .layers .grad { width: 22px; height: 8px; border-radius: 2px; flex: none;
+    background: linear-gradient(90deg, #ff5d5d, #f5d524, #3ddc97); }
+  .layers .off { opacity: .35; }
+  .layers .n { margin-left: auto; font: 11px var(--mono); color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font: 12px var(--mono); }
+  th { text-align: right; color: var(--muted); font-weight: 500; padding: 4px 4px; border-bottom: 1px solid var(--line); }
+  td { text-align: right; padding: 5px 4px; border-bottom: 1px solid #1d222a; }
+  th:first-child, td:first-child { text-align: left; }
+  tbody tr { cursor: pointer; } tbody tr:hover { background: var(--panel2); }
+  tfoot td { color: var(--accent); font-weight: 600; border-bottom: 0; }
   .meta { font: 11px var(--mono); color: var(--muted); white-space: pre-wrap; }
+  .err { color: var(--bad); font: 12px var(--mono); }
+  .link { background: none; padding: 0; color: var(--muted); font-weight: 500; text-decoration: underline; font-size: 12px; }
+  .wrap { position: relative; }
   #map { height: 100vh; background: #0b0d10; }
   .overlay { position: absolute; inset: 0; display: none; place-items: center; z-index: 1000;
-    background: rgba(15,18,22,.55); font: 14px var(--mono); color: var(--text); pointer-events: none; }
+    background: rgba(13,16,20,.55); font: 14px var(--mono); pointer-events: none; }
   .overlay.on { display: grid; }
-  .wrap { position: relative; }
-  .err { color: var(--bad); font: 12px var(--mono); }
+  .play { position: absolute; left: 16px; right: 16px; bottom: 18px; z-index: 900; display: none;
+    background: rgba(20,24,30,.92); backdrop-filter: blur(6px); border: 1px solid var(--line);
+    border-radius: 12px; padding: 10px 14px; gap: 12px; align-items: center; }
+  .play.on { display: flex; }
+  .play input[type=range] { flex: 1; accent-color: var(--accent); }
+  .play .info { font: 12px var(--mono); color: var(--muted); min-width: 330px; text-align: right; }
+  .play button { width: 38px; padding: 8px 0; }
+  .basemap { position: absolute; top: 12px; right: 12px; z-index: 900; display: flex; gap: 4px;
+    background: rgba(20,24,30,.92); border: 1px solid var(--line); border-radius: 8px; padding: 4px; }
+  .basemap button { padding: 5px 9px; font-size: 12px; background: none; color: var(--muted); }
+  .basemap button.on { background: var(--line); color: var(--text); }
+  .car { width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 3px solid var(--accent);
+    box-shadow: 0 0 0 6px rgba(61,220,151,.25); }
 </style>
 </head>
 <body>
@@ -66,13 +97,13 @@
   <aside>
     <div>
       <h1>Path<span>Snap</span></h1>
-      <div class="sub">Map-matching · LightGBM + HMM/Viterbi</div>
+      <div class="sub">GPS map-matching · tuned LightGBM + HMM/Viterbi</div>
     </div>
 
     <div>
-      <label>API (Laptop 1)</label>
+      <label>API server (Laptop 1)</label>
       <div class="row">
-        <input id="api" spellcheck="false">
+        <input type="text" id="api" spellcheck="false">
         <button id="connect">Connect</button>
       </div>
       <div class="status"><span class="dot" id="dot"></span><span id="status">not connected</span></div>
@@ -83,26 +114,48 @@
       <div class="trips" id="trips"><div class="meta">Connect to load trips</div></div>
     </div>
 
-    <button class="primary" id="run" disabled>Reconstruct route</button>
+    <div class="btns">
+      <button class="primary" id="run" disabled>Reconstruct route</button>
+      <button id="runall" disabled>Run all trips</button>
+    </div>
     <div class="err" id="err"></div>
 
     <div id="results" style="display:none">
-      <label>Results (computed on the API server)</label>
+      <label>Trip <span id="r-trip"></span> · scored on the API server</label>
       <div class="cards">
-        <div class="card hero"><div class="k">Top-1 accuracy · HMM</div><div class="v" id="m-top1">–</div>
-          <div class="d" id="m-top1-cls">–</div></div>
+        <div class="card hero">
+          <div><div class="k">Top-1 accuracy · ML + HMM</div><div class="v" id="m-top1">–</div></div>
+          <div class="d" style="text-align:right" id="m-gain"></div>
+          <div class="bar"><i id="b-cls" style="background:var(--cls)"></i></div>
+          <div class="bar" style="margin-top:4px"><i id="b-hmm" style="background:var(--accent)"></i></div>
+          <div class="d" style="grid-column:span 2;margin-top:4px" id="m-top1-cls"></div>
+        </div>
         <div class="card"><div class="k">Route continuity</div><div class="v" id="m-cont">–</div><div class="d" id="m-cont-cls"></div></div>
         <div class="card"><div class="k">Route F1</div><div class="v" id="m-f1">–</div><div class="d" id="m-f1-cls"></div></div>
+        <div class="card"><div class="k">HMM corrections</div><div class="v" id="m-fix">–</div><div class="d" id="m-fix-d"></div></div>
+        <div class="card"><div class="k">Mean confidence</div><div class="v" id="m-conf">–</div><div class="d" id="m-conf-d"></div></div>
         <div class="card"><div class="k">GPS points</div><div class="v" id="m-n">–</div><div class="d" id="m-cands"></div></div>
         <div class="card"><div class="k">API time</div><div class="v" id="m-t">–</div><div class="d" id="m-tv"></div></div>
       </div>
     </div>
 
-    <div class="legend" id="legend">
-      <label>Layers</label>
-      <div data-layer="hmm"><span class="sw" style="background:var(--accent)"></span>Predicted route (HMM)</div>
-      <div data-layer="cls" class="off"><span class="sw" style="background:var(--cls)"></span>Classifier only (no HMM)</div>
+    <div class="layers" id="layers">
+      <label>Map layers</label>
+      <div data-layer="hmm"><span class="sw" style="background:var(--accent)"></span>Predicted route (ML + HMM)<span class="n" id="n-hmm"></span></div>
+      <div data-layer="cls" class="off"><span class="sw" style="background:var(--cls)"></span>Classifier only (no HMM)<span class="n" id="n-cls"></span></div>
+      <div data-layer="fix"><span class="ring"></span>Points the HMM corrected<span class="n" id="n-fix"></span></div>
       <div data-layer="gps"><span class="sw" style="background:var(--gps)"></span>Raw GPS</div>
+      <div data-layer="conf" class="off"><span class="grad"></span>GPS by classifier confidence</div>
+    </div>
+
+    <div id="batch" style="display:none">
+      <label style="display:flex;justify-content:space-between">All trips <button class="link" id="csv">export CSV</button></label>
+      <table>
+        <thead><tr><th>Trip</th><th>ML</th><th>ML+HMM</th><th>Cont.</th><th>Pts</th><th>s</th></tr></thead>
+        <tbody id="tb"></tbody>
+        <tfoot id="tf"></tfoot>
+      </table>
+      <div class="meta" style="margin-top:6px">Totals weighted by scored points.</div>
     </div>
 
     <div class="meta" id="meta"></div>
@@ -110,22 +163,55 @@
 
   <div class="wrap">
     <div id="map"></div>
+    <div class="basemap"><button data-b="dark" class="on">Dark</button><button data-b="osm">Streets</button></div>
     <div class="overlay" id="overlay">running pipeline on API…</div>
+    <div class="play" id="play">
+      <button id="pp" title="Play / pause (space)">▶</button>
+      <input type="range" id="slider" min="0" value="0">
+      <div class="info" id="pinfo"></div>
+    </div>
   </div>
 </div>
 
 <script>
 const $ = id => document.getElementById(id);
 const pct = x => x == null ? "–" : (100 * x).toFixed(1) + "%";
-let api = localStorage.getItem("pathsnap_api") || `http://${location.hostname || "localhost"}:8000`;
-$("api").value = api;
+const fmtT = s => { s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
+  return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(x).padStart(2, "0"); };
+let api = "";
+try { api = localStorage.getItem("pathsnap_api") || ""; } catch (e) {}
+$("api").value = api || `http://${location.hostname || "localhost"}:8000`;
 
-const map = L.map("map", { preferCanvas: true }).setView([30, 0], 2);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-  { maxZoom: 19, attribution: "© OpenStreetMap contributors" }).addTo(map);
-const layers = { hmm: L.layerGroup().addTo(map), cls: L.layerGroup(), gps: L.layerGroup().addTo(map) };
+// ---------- map ----------
+const map = L.map("map", { preferCanvas: true, zoomControl: false }).setView([30, 0], 2);
+L.control.zoom({ position: "topleft" }).addTo(map);
+const bases = {
+  dark: L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    { maxZoom: 20, attribution: "© OpenStreetMap contributors © CARTO" }),
+  osm: L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    { maxZoom: 19, attribution: "© OpenStreetMap contributors" }),
+};
+bases.dark.addTo(map);
+document.querySelectorAll(".basemap button").forEach(b => b.onclick = () => {
+  Object.values(bases).forEach(l => map.removeLayer(l));
+  bases[b.dataset.b].addTo(map).bringToBack();
+  document.querySelectorAll(".basemap button").forEach(x => x.classList.toggle("on", x === b));
+});
 
-let selected = null;
+const layers = { hmm: L.layerGroup().addTo(map), cls: L.layerGroup(), fix: L.layerGroup().addTo(map),
+                 gps: L.layerGroup().addTo(map), conf: L.layerGroup() };
+const car = L.marker([0, 0], { icon: L.divIcon({ className: "", html: '<div class="car"></div>', iconSize: [14, 14] }) });
+
+function confColor(c) {           // red (0) -> yellow (.5) -> green (1)
+  if (c == null) return "#666";
+  const lerp = (a, b, t) => Math.round(a + (b - a) * t);
+  const [r1, g1, b1, r2, g2, b2, t] = c < .5 ? [255, 93, 93, 245, 213, 36, c / .5] : [245, 213, 36, 61, 220, 151, (c - .5) / .5];
+  return `rgb(${lerp(r1, r2, t)},${lerp(g1, g2, t)},${lerp(b1, b2, t)})`;
+}
+
+// ---------- state ----------
+let selected = null, current = null, trips = [];
+const results = {};   // trip_id -> response summary row
 
 async function connect() {
   api = $("api").value.trim().replace(/\/$/, "");
@@ -136,83 +222,177 @@ async function connect() {
     const t = await (await fetch(`${api}/trips`)).json();
     $("dot").className = "dot ok";
     $("status").textContent = `${h.model} · β=${h.beta} · ${t.trips.length} trips`;
-    renderTrips(t.trips);
+    trips = t.trips; renderTrips(); $("runall").disabled = !trips.length;
   } catch (e) {
-    $("dot").className = "dot err";
-    $("status").textContent = "cannot reach API";
-    $("err").textContent = "Check the IP, that uvicorn runs with --host 0.0.0.0, and both laptops share a network.";
+    $("dot").className = "dot err"; $("status").textContent = "cannot reach API";
+    $("err").textContent = "Check the IP, that uvicorn runs with --host 0.0.0.0, and that both laptops are on the same network.";
   }
 }
 
-function renderTrips(ids) {
+function renderTrips() {
   $("trips").innerHTML = "";
-  ids.forEach(id => {
+  trips.forEach(id => {
     const b = document.createElement("div");
-    b.className = "trip"; b.textContent = id; b.dataset.id = id;
-    b.onclick = () => {
-      document.querySelectorAll(".trip").forEach(x => x.classList.remove("sel"));
-      b.classList.add("sel"); selected = id; $("run").disabled = false;
-    };
+    b.className = "trip" + (id === selected ? " sel" : "");
+    const r = results[id];
+    b.innerHTML = `<span>${id}</span><span class="acc">${r && r.hmm != null ? pct(r.hmm) : ""}</span>`;
+    b.onclick = () => { selected = id; $("run").disabled = false; renderTrips();
+      if (results[id] && results[id].data) draw(results[id].data); };
     $("trips").appendChild(b);
   });
 }
 
-async function run() {
-  if (!selected) return;
-  $("run").disabled = true; $("overlay").classList.add("on"); $("err").textContent = "";
-  try {
-    const r = await fetch(`${api}/predict`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ trip_id: selected }) });
-    if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
-    draw(await r.json());
-    document.querySelector(`.trip[data-id="${selected}"]`).classList.add("done");
-  } catch (e) {
-    $("err").textContent = "Request failed: " + e.message;
-  } finally {
-    $("run").disabled = false; $("overlay").classList.remove("on");
-  }
+async function predict(id) {
+  const r = await fetch(`${api}/predict`, { method: "POST", headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify({ trip_id: id }) });
+  if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
+  const d = await r.json();
+  const h = d.metrics.hmm, c = d.metrics.classifier_only;
+  results[id] = { data: d, hmm: h && h.top1_accuracy, cls: c && c.top1_accuracy,
+                  cont: h && h.route_continuity, f1: h && h.route_f1,
+                  n: h ? h.scored_points : 0, s: d.timing.request_s, fixes: d.summary.hmm_corrections };
+  return d;
 }
 
-function draw(d) {
-  Object.values(layers).forEach(l => l.clearLayers());
-  d.gps.forEach(p => L.circleMarker(p, { radius: 2, stroke: false, fillColor: "#5aa9ff",
-    fillOpacity: .75 }).addTo(layers.gps));
-  d.route_classifier.forEach(l => L.polyline(l, { color: "#f5a524", weight: 3, opacity: .9 }).addTo(layers.cls));
-  d.route_hmm.forEach(l => L.polyline(l, { color: "#3ddc97", weight: 5, opacity: .9 }).addTo(layers.hmm));
-  L.circleMarker(d.gps[0], { radius: 7, color: "#fff", fillColor: "#3ddc97", fillOpacity: 1 })
-    .bindTooltip("Start").addTo(layers.gps);
-  L.circleMarker(d.gps[d.gps.length - 1], { radius: 7, color: "#fff", fillColor: "#ff5d5d", fillOpacity: 1 })
-    .bindTooltip("End").addTo(layers.gps);
-  map.fitBounds(L.latLngBounds(d.gps), { padding: [30, 30] });
+async function runOne() {
+  if (!selected) return;
+  busy(true);
+  try { draw(await predict(selected)); renderTrips(); renderBatch(); }
+  catch (e) { $("err").textContent = "Request failed: " + e.message; }
+  finally { busy(false); }
+}
 
-  const h = d.metrics.hmm, c = d.metrics.classifier_only;
-  $("results").style.display = "block";
+async function runAll() {
+  busy(true);
+  for (const [i, id] of trips.entries()) {
+    $("overlay").textContent = `running ${i + 1}/${trips.length} · trip ${id}`;
+    selected = id;
+    try { draw(await predict(id)); } catch (e) { $("err").textContent = `trip ${id}: ${e.message}`; }
+    renderTrips(); renderBatch();
+  }
+  busy(false);
+}
+
+function busy(on) {
+  $("run").disabled = on || !selected; $("runall").disabled = on || !trips.length;
+  $("overlay").classList.toggle("on", on);
+  if (on) $("err").textContent = ""; else $("overlay").textContent = "running pipeline on API…";
+}
+
+// ---------- drawing ----------
+function draw(d) {
+  current = d;
+  Object.values(layers).forEach(l => l.clearLayers());
+  const P = d.points;
+  d.gps.forEach((p, i) => {
+    L.circleMarker(p, { radius: 2, stroke: false, fillColor: "#5aa9ff", fillOpacity: .7 }).addTo(layers.gps);
+    L.circleMarker(p, { radius: 3, stroke: false, fillColor: confColor(P.conf[i]), fillOpacity: .9 })
+      .bindTooltip(`#${i} · confidence ${P.conf[i] == null ? "n/a" : P.conf[i].toFixed(2)}`).addTo(layers.conf);
+    if (P.hmm_changed[i]) L.circleMarker(p, { radius: 5, color: "#ff4fd8", weight: 1.5, fill: false })
+      .bindTooltip(`#${i} · HMM overrode the classifier here`).addTo(layers.fix);
+  });
+  d.route_classifier.forEach(l => L.polyline(l, { color: "#f5a524", weight: 3, opacity: .85 }).addTo(layers.cls));
+  d.route_hmm.forEach(l => L.polyline(l, { color: "#3ddc97", weight: 5, opacity: .9 }).addTo(layers.hmm));
+  L.circleMarker(d.gps[0], { radius: 7, color: "#fff", weight: 2, fillColor: "#3ddc97", fillOpacity: 1 }).bindTooltip("Start").addTo(layers.gps);
+  L.circleMarker(d.gps.at(-1), { radius: 7, color: "#fff", weight: 2, fillColor: "#ff5d5d", fillOpacity: 1 }).bindTooltip("End").addTo(layers.gps);
+  map.fitBounds(L.latLngBounds(d.gps), { paddingTopLeft: [50, 50], paddingBottomRight: [50, 110] });
+
+  const h = d.metrics.hmm, c = d.metrics.classifier_only, s = d.summary;
+  $("results").style.display = "block"; $("r-trip").textContent = d.trip_id;
   if (h) {
     $("m-top1").textContent = pct(h.top1_accuracy);
     const gain = (h.top1_accuracy - c.top1_accuracy) * 100;
-    $("m-top1-cls").innerHTML = `classifier only ${pct(c.top1_accuracy)} · <span class="up">${gain >= 0 ? "+" : ""}${gain.toFixed(1)} pts</span>`;
-    $("m-cont").textContent = pct(h.route_continuity); $("m-cont-cls").textContent = `cls ${pct(c.route_continuity)}`;
-    $("m-f1").textContent = pct(h.route_f1); $("m-f1-cls").textContent = `cls ${pct(c.route_f1)}`;
+    $("m-gain").innerHTML = `<span class="up">${gain >= 0 ? "+" : ""}${gain.toFixed(1)} pts</span><br>from HMM`;
+    $("m-top1-cls").innerHTML = `<span style="color:var(--cls)">■</span> classifier only ${pct(c.top1_accuracy)} &nbsp; <span class="up">■</span> ML + HMM ${pct(h.top1_accuracy)}`;
+    $("b-cls").style.width = pct(c.top1_accuracy); $("b-hmm").style.width = pct(h.top1_accuracy);
+    $("m-cont").textContent = pct(h.route_continuity); $("m-cont-cls").textContent = `classifier ${pct(c.route_continuity)}`;
+    $("m-f1").textContent = pct(h.route_f1); $("m-f1-cls").textContent = `classifier ${pct(c.route_f1)}`;
   } else {
-    $("m-top1").textContent = "n/a"; $("m-top1-cls").textContent = "no reference route on server";
+    $("m-top1").textContent = "n/a"; $("m-gain").textContent = "";
+    $("m-top1-cls").textContent = "no reference route on the server for this trip";
   }
+  $("m-fix").textContent = s.hmm_corrections.toLocaleString();
+  $("m-fix-d").textContent = `${(100 * s.hmm_corrections / d.n_points).toFixed(1)}% of points`;
+  $("m-conf").textContent = s.mean_confidence.toFixed(2);
+  $("m-conf-d").textContent = `${s.low_confidence_points.toLocaleString()} points below 0.5`;
   $("m-n").textContent = d.n_points.toLocaleString();
-  $("m-cands").textContent = `${d.n_candidates.toLocaleString()} candidates`;
+  $("m-cands").textContent = `${d.n_candidates.toLocaleString()} candidates · ${fmtT(s.duration_s)}`;
   $("m-t").textContent = d.timing.request_s.toFixed(2) + "s";
-  $("m-tv").textContent = `viterbi ${d.timing.viterbi_s.toFixed(2)}s`;
-  $("meta").textContent = `trip ${d.trip_id}\nmodel ${d.model}\nHMM chain breaks ${d.hmm_chain_breaks}\npoints without candidates ${d.points_without_candidates}`;
+  $("m-tv").textContent = `features+ML ${d.timing.features_and_classifier_s.toFixed(2)}s · viterbi ${d.timing.viterbi_s.toFixed(2)}s`;
+  $("n-hmm").textContent = `${d.route_hmm.length} seg`; $("n-cls").textContent = `${d.route_classifier.length} seg`;
+  $("n-fix").textContent = s.hmm_corrections.toLocaleString();
+  $("meta").textContent = `model ${d.model} · HMM chain breaks ${d.hmm_chain_breaks} · points without candidates ${d.points_without_candidates}`;
+
+  // playback
+  stop(); $("slider").max = d.gps.length - 1; $("slider").value = 0; $("play").classList.add("on");
+  car.addTo(map); scrub(0);
 }
 
-document.querySelectorAll("#legend [data-layer]").forEach(el => {
-  el.onclick = () => {
-    const l = layers[el.dataset.layer];
-    if (map.hasLayer(l)) { map.removeLayer(l); el.classList.add("off"); }
-    else { map.addLayer(l); el.classList.remove("off"); }
-  };
+function scrub(i) {
+  if (!current) return;
+  const P = current.points, c = P.conf[i];
+  car.setLatLng(current.gps[i]);
+  $("pinfo").innerHTML = `t+${fmtT(P.t[i])} · ${P.speed_kmh[i].toFixed(0)} km/h · conf ` +
+    `<span style="color:${confColor(c)}">${c == null ? "n/a" : c.toFixed(2)}</span>` +
+    (P.hmm_changed[i] ? ' · <span style="color:var(--fix)">HMM corrected</span>' : "");
+}
+let timer = null;
+function stop() { clearInterval(timer); timer = null; $("pp").textContent = "▶"; }
+function toggle() {
+  if (timer) return stop();
+  $("pp").textContent = "❚❚";
+  const step = Math.max(1, Math.round(current.gps.length / 600));   // whole trip in about 30 s
+  timer = setInterval(() => {
+    let i = +$("slider").value + step;
+    if (i >= current.gps.length) { i = current.gps.length - 1; stop(); }
+    $("slider").value = i; scrub(i);
+    if (!map.getBounds().contains(current.gps[i])) map.panTo(current.gps[i]);
+  }, 50);
+}
+$("slider").oninput = e => scrub(+e.target.value);
+$("pp").onclick = toggle;
+
+// ---------- batch table ----------
+function renderBatch() {
+  const ids = trips.filter(id => results[id]);
+  if (!ids.length) return;
+  $("batch").style.display = "block";
+  $("tb").innerHTML = ids.map(id => { const r = results[id];
+    return `<tr data-id="${id}"><td>${id}</td><td>${pct(r.cls)}</td><td class="up">${pct(r.hmm)}</td>` +
+           `<td>${pct(r.cont)}</td><td>${r.n.toLocaleString()}</td><td>${r.s.toFixed(1)}</td></tr>`; }).join("");
+  const scored = ids.filter(id => results[id].hmm != null);
+  const N = scored.reduce((a, id) => a + results[id].n, 0);
+  const w = k => scored.reduce((a, id) => a + results[id][k] * results[id].n, 0) / N;
+  $("tf").innerHTML = N ? `<tr><td>All (${scored.length})</td><td>${pct(w("cls"))}</td><td>${pct(w("hmm"))}</td>` +
+    `<td>${pct(w("cont"))}</td><td>${N.toLocaleString()}</td><td>${ids.reduce((a, id) => a + results[id].s, 0).toFixed(1)}</td></tr>` : "";
+  document.querySelectorAll("#tb tr").forEach(tr => tr.onclick = () => {
+    selected = tr.dataset.id; renderTrips(); draw(results[selected].data); });
+}
+$("csv").onclick = () => {
+  const rows = [["trip", "top1_classifier", "top1_hmm", "continuity_hmm", "route_f1_hmm", "scored_points", "hmm_corrections", "api_seconds"]];
+  trips.filter(id => results[id]).forEach(id => { const r = results[id];
+    rows.push([id, r.cls, r.hmm, r.cont, r.f1, r.n, r.fixes, r.s]); });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([rows.map(r => r.join(",")).join("\n")], { type: "text/csv" }));
+  a.download = "pathsnap_results.csv"; a.click();
+};
+
+// ---------- layers & keys ----------
+document.querySelectorAll("#layers [data-layer]").forEach(el => el.onclick = () => {
+  const l = layers[el.dataset.layer];
+  if (map.hasLayer(l)) { map.removeLayer(l); el.classList.add("off"); }
+  else { map.addLayer(l); el.classList.remove("off"); }
+});
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT" && e.target.type === "text") return;
+  if (!current) return;
+  if (e.code === "Space") { e.preventDefault(); toggle(); }
+  if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+    const s = $("slider"); s.value = +s.value + (e.key === "ArrowRight" ? 10 : -10); scrub(+s.value); }
 });
 $("connect").onclick = connect;
-$("run").onclick = run;
+$("run").onclick = runOne;
+$("runall").onclick = runAll;
 $("api").addEventListener("keydown", e => { if (e.key === "Enter") connect(); });
 connect();
 </script>

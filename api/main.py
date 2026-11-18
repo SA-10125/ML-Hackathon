@@ -22,6 +22,7 @@ import sys
 import time
 from pathlib import Path
 
+import numpy as np
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -34,7 +35,19 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(
                     datefmt="%H:%M:%S")
 log = logging.getLogger("pathsnap")
 
-TRIPS_DIR = Path(os.environ.get("PATHSNAP_TRIPS_DIR", ROOT / "Student folder" / "student_test"))
+def _default_trips_dir():
+    """First student_test folder that actually contains trips (the dataset zip
+    sometimes unpacks as "Student folder/Student folder/...")."""
+    for c in [ROOT / "Student folder" / "student_test",
+              ROOT / "Student folder" / "Student folder" / "student_test",
+              ROOT / "data" / "raw" / "student_test"]:
+        if c.exists() and any(c.glob("*/*.track")):
+            return c
+    return ROOT / "Student folder" / "student_test"
+
+
+_env = os.environ.get("PATHSNAP_TRIPS_DIR")
+TRIPS_DIR = Path(_env) if _env else _default_trips_dir()
 if not TRIPS_DIR.is_absolute():
     TRIPS_DIR = ROOT / TRIPS_DIR
 ART = load_artifacts(os.environ.get("PATHSNAP_MODEL"))
@@ -75,11 +88,23 @@ def predict(req: PredictRequest):
         raise HTTPException(404, f"unknown trip id {tid}")
     log.info("REQUEST  /predict trip=%s", tid)
     t0 = time.time()
-    trip, cls_pred, hmm_pred, breaks, timing, n_cands = predict_route(TRIPS_DIR, tid, ART)
+    trip, cls_pred, hmm_pred, breaks, timing, n_cands, conf = predict_route(TRIPS_DIR, tid, ART)
     metrics_hmm = score_route(TRIPS_DIR, tid, trip, hmm_pred)
     metrics_cls = score_route(TRIPS_DIR, tid, trip, cls_pred)
     step = max(1, len(trip.xy) // 4000)
-    gps = trip.track_ll[::step, ::-1].round(6).tolist()
+    idx = np.arange(0, len(trip.xy), step)
+    gps = trip.track_ll[idx, ::-1].round(6).tolist()
+    # per-point extras for the UI (prediction-side only, nothing from the reference route)
+    changed = (cls_pred != hmm_pred) & (hmm_pred >= 0) & (cls_pred >= 0)
+    dxy = np.r_[0.0, np.linalg.norm(np.diff(trip.xy, axis=0), axis=1)]
+    dtt = np.r_[1.0, np.maximum(np.diff(trip.t), 1e-6)]
+    speed_kmh = dxy / dtt * 3.6
+    points = {
+        "t": (trip.t[idx] - trip.t[0]).round(1).tolist(),
+        "conf": [None if np.isnan(c) else round(float(c), 3) for c in conf[idx]],
+        "hmm_changed": changed[idx].astype(int).tolist(),
+        "speed_kmh": speed_kmh[idx].round(1).tolist(),
+    }
     resp = {
         "trip_id": tid,
         "n_points": int(len(trip.xy)),
@@ -87,6 +112,11 @@ def predict(req: PredictRequest):
         "points_without_candidates": int((hmm_pred < 0).sum()),
         "hmm_chain_breaks": int(breaks),
         "gps": gps,
+        "points": points,
+        "summary": {"hmm_corrections": int(changed.sum()),
+                    "mean_confidence": float(np.nanmean(conf)),
+                    "low_confidence_points": int(np.nansum(conf < 0.5)),
+                    "duration_s": float(trip.t[-1] - trip.t[0])},
         "route_hmm": route_geometry(trip, hmm_pred),
         "route_classifier": route_geometry(trip, cls_pred),
         "metrics": {"hmm": metrics_hmm, "classifier_only": metrics_cls},

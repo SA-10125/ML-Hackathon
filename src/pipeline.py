@@ -44,13 +44,16 @@ def predict_route(trip_dir: Path, trip_id: str, art):
     best = cands[["pt", "arc"]].assign(s=prob).groupby("pt").s.idxmax()
     cls_pred = np.full(len(trip.xy), -1, dtype=np.int64)
     cls_pred[cands.pt.values[best.values]] = cands.arc.values[best.values]
+    # classifier confidence per point = probability of its top candidate (NaN if no candidates)
+    conf = np.full(len(trip.xy), np.nan)
+    conf[cands.pt.values[best.values]] = prob[best.values]
 
     hmm_pred, breaks = viterbi(trip, cands, np.log(np.clip(prob, 1e-6, 1)),
                                beta=art["beta"], gap_s=art["gap_s"])
     t3 = time.time()
     timing = {"load_s": t1 - t0, "features_and_classifier_s": t2 - t1, "viterbi_s": t3 - t2,
               "total_s": t3 - t0}
-    return trip, cls_pred, hmm_pred, breaks, timing, len(cands)
+    return trip, cls_pred, hmm_pred, breaks, timing, len(cands), conf
 
 
 def score_route(trip_dir: Path, trip_id: str, trip, pred):

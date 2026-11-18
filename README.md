@@ -33,6 +33,7 @@ python -m src.viz_map --trip 00000065 --pred outputs/results/logreg_student_test
 | `src/hmm.py` | HMM + Viterbi decoder (emissions = classifier, transitions = network vs GPS distance) |
 | `src/eval_hmm.py` | Decoder tuning on held-out train trips; classifier-only vs HMM on student-test |
 | `src/tuning_report.py` | Tuned vs untuned comparison, optimisation history plot |
+| `src/final_eval.py` | Final pipeline per-trip results, HMM fixed/broke analysis, final Folium maps |
 | `src/tune.py` | Optuna (TPE) Bayesian optimisation of LightGBM |
 | `src/plot_results.py` | Comparison plots + MLP loss curve |
 | `src/viz_map.py` | Folium maps (GPS, road network, reference, prediction) |
@@ -173,3 +174,21 @@ click Reconstruct route.
 **Endpoints:** `GET /health`, `GET /trips`, `POST /predict {"trip_id": "..."}`.
 Reference routes stay on the API server; the UI receives only the GPS track, the predicted
 route and aggregate metrics.
+
+**Pre-demo checklist (run these on the actual Wi-Fi you will use)**
+1. Both laptops on the same network. College Wi-Fi often blocks laptop-to-laptop traffic
+   ("client isolation"); if step 4 fails, put both laptops on one phone hotspot.
+2. Laptop 1: start the API with `--host 0.0.0.0` (not the default 127.0.0.1, which only
+   accepts connections from the same machine).
+3. Laptop 1 (macOS): System Settings → Network → Firewall: off, or allow incoming
+   connections for Python.
+4. Laptop 2: `curl http://<laptop-1-ip>:8000/health` must return `"n_trips": 10` before
+   opening the UI. If it hangs, the problem is the network or firewall, not the code.
+5. In the UI use the **Dark** basemap (CARTO tiles). Laptop 2 needs internet for the map
+   background; routes and metrics work without it.
+6. Install the same library versions on Laptop 1 as were used to train the model
+   (`pip freeze | grep -iE "scikit|lightgbm"` on the training machine): the pickled
+   LightGBM model warns or can break under a different scikit-learn version.
+7. The API finds trips in `Student folder/student_test` or
+   `Student folder/Student folder/student_test` automatically; for the evaluator trips set
+   `PATHSNAP_TRIPS_DIR`. Take the report screenshots of the Laptop 1 terminal logs here.
