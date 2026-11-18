@@ -1,0 +1,7 @@
+PROBLEM STATEMENT
+PathSnap is a GPS trajectory map-matching challenge. 
+Your team must build a machine learning-based system that takes noisy GPS coordinates and 
+identifies the most likely roads travelled. The solution should combine a trained model for 
+identifying road candidates with an HMM/Viterbi-based approach to reconstruct the most likely route. 
+Predictions must be exposed through a FastAPI server that integrates with the evaluator interface.
+

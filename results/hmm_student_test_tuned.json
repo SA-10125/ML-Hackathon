@@ -1,0 +1,28 @@
+{
+  "partition": "student_test",
+  "tag": "tuned",
+  "params": {
+    "sigma": 3.0,
+    "beta": 2.0,
+    "radius": 50.0,
+    "k": 16,
+    "heading_w": 0.0,
+    "back_tol": 10.0,
+    "gap_s": 60.0,
+    "vmax": 0.0,
+    "cutoff_factor": 3.0,
+    "cutoff_slack": 200.0,
+    "emission_w": 1.0
+  },
+  "trips": 10,
+  "cand_miss_rate": 0.001205387558304072,
+  "near_top1_acc_micro": 0.5102982024002934,
+  "near_top1_acc_trip_mean": 0.5413757661443925,
+  "near_continuity_mean": 0.4303362585989448,
+  "near_route_f1_mean": 0.6402769015815246,
+  "hmm_top1_acc_micro": 0.8720192862009328,
+  "hmm_top1_acc_trip_mean": 0.9023247898300537,
+  "hmm_continuity_mean": 0.9077526479390166,
+  "hmm_route_f1_mean": 0.9683063097867993,
+  "decode_s_total": 2.068433299980825
+}

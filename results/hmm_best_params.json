@@ -1,0 +1,13 @@
+{
+  "sigma": 3.0,
+  "beta": 2.0,
+  "radius": 50.0,
+  "k": 16,
+  "heading_w": 0.0,
+  "back_tol": 10.0,
+  "gap_s": 60.0,
+  "vmax": 0.0,
+  "cutoff_factor": 3.0,
+  "cutoff_slack": 200.0,
+  "emission_w": 1.0
+}
