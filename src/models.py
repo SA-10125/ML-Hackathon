@@ -7,6 +7,7 @@ Optional spec keys
   needs_groups   : fit() receives trip ids, used for a trip-held-out validation split.
 """
 import numpy as np
+from lightgbm import LGBMClassifier
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
@@ -106,6 +107,17 @@ MODELS = {
         "make": lambda: EpochMLP(hidden=(64, 32)),
         "max_train_rows": 300_000,
         "needs_groups": True,
+    },
+    # Model 5 — gradient boosting: trees added sequentially, each fitting the errors of
+    # the previous ones. Handles feature interactions without scaling; fast histogram splits.
+    "lightgbm": {
+        "family": "Boosting",
+        "config": "LGBM(n_estimators=400, lr=0.05, num_leaves=63, min_child_samples=50, "
+                  "subsample=0.8, colsample_bytree=0.8)",
+        "make": lambda: LGBMClassifier(
+            n_estimators=400, learning_rate=0.05, num_leaves=63, min_child_samples=50,
+            subsample=0.8, subsample_freq=1, colsample_bytree=0.8,
+            random_state=SEED, n_jobs=-1, verbose=-1),
     },
     # Model 4 — instance-based. Distances are meaningless without scaling.
     # Fitted on a sample: KNN stores the data and its prediction cost grows with it.

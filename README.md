@@ -27,6 +27,7 @@ python -m src.viz_map --trip 00000065 --pred outputs/results/logreg_student_test
 | `src/models.py` | Model registry |
 | `src/train.py` | GroupKFold-by-trip CV, student-test evaluation, result logging |
 | `src/metrics.py` | Row metrics, observation-level Top-1, route continuity |
+| `src/feature_analysis.py` | Feature distributions, rule baselines, LightGBM importance |
 | `src/plot_results.py` | Comparison plots + MLP loss curve |
 | `src/viz_map.py` | Folium maps (GPS, road network, reference, prediction) |
 | `outputs/results/` | `model_comparison.csv`, per-fold CV scores, predictions |
@@ -48,6 +49,8 @@ python -m src.viz_map --trip 00000065 --pred outputs/results/logreg_student_test
 | Random Forest | 0.928 ± 0.013 | 0.890 | 0.934 | 0.068 | 0.952 |
 | MLP (64,32) | 0.924 ± 0.013 | 0.882 | 0.928 | 0.073 | 0.948 |
 | KNN (k=25, distance) | 0.913 ± 0.015 | 0.871 | 0.919 | 0.107 | 0.939 |
+| **LightGBM** | **0.929 ± 0.011** | **0.891** | **0.935** | **0.066** | **0.953** |
+| Rule: nearest arc | – | 0.540 | – | – | – |
 
 Plots: `python -m src.plot_results` → `outputs/figures/`.
 Models are saved xz-compressed (uncompressed random forest is ~260 MB, over GitHub's limit).
