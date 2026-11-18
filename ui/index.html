@@ -4,8 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PathSnap — Route Reconstruction</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Leaflet 1.9.4 bundled locally so the UI loads even if the venue network has no internet.
+     Map tiles still need internet; without it the routes and GPS points draw on a blank background. -->
+<link rel="stylesheet" href="vendor/leaflet.css">
+<script src="vendor/leaflet.js"></script>
 <style>
   :root {
     --bg: #0f1216; --panel: #161a20; --line: #262c35; --text: #e6e8eb; --muted: #8b939e;
