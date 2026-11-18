@@ -1,0 +1,19 @@
+{
+  "model": "lightgbm",
+  "family": "Boosting",
+  "config": "LGBM(n_estimators=400, lr=0.05, num_leaves=63, min_child_samples=50, subsample=0.8, colsample_bytree=0.8)",
+  "cv_macro_f1": 0.9287880952934291,
+  "cv_macro_f1_std": 0.011119640018153746,
+  "cv_top1": 0.8819549113443781,
+  "cv_log_loss": 0.07779984186676328,
+  "train_macro_f1": 0.9500748117951361,
+  "test_accuracy": 0.9728822896061297,
+  "test_precision": 0.8924571367907002,
+  "test_recall": 0.8793869972278885,
+  "test_macro_f1": 0.9352434750562022,
+  "test_log_loss": 0.0656472866949958,
+  "test_top1": 0.890712381748811,
+  "test_continuity": 0.9528873930463041,
+  "train_time_s": 27.765934467315674,
+  "infer_ms_per_point": 0.09852970069534843
+}

@@ -1,0 +1,19 @@
+{
+  "model": "logreg",
+  "family": "Linear / probabilistic",
+  "config": "StandardScaler + LogisticRegression(C=1.0, lbfgs, max_iter=1000)",
+  "cv_macro_f1": 0.9037397887643461,
+  "cv_macro_f1_std": 0.016305733903535402,
+  "cv_top1": 0.8619572713122462,
+  "cv_log_loss": 0.11988900798300295,
+  "train_macro_f1": 0.9077377739759142,
+  "test_accuracy": 0.9623907654555925,
+  "test_precision": 0.8437778593528764,
+  "test_recall": 0.8415712118834667,
+  "test_macro_f1": 0.9106578588052932,
+  "test_log_loss": 0.10127529771940791,
+  "test_top1": 0.8667224167668426,
+  "test_continuity": 0.9309144396037408,
+  "train_time_s": 5.544586181640625,
+  "infer_ms_per_point": 0.000980166652257358
+}

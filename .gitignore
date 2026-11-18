@@ -1,0 +1,13 @@
+data/raw/
+data/processed/
+__pycache__/
+*.pyc
+.venv/
+pathsnap.zip
+eda_update.zip
+lgbm_update.zip
+hmm_update.zip
+outputs/tuning/optuna.db
+api_update.zip
+deploy_section.md
+tuned_update.zip

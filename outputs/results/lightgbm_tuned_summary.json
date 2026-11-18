@@ -1,0 +1,19 @@
+{
+  "model": "lightgbm_tuned",
+  "family": "Boosting (Bayesian-tuned)",
+  "config": "LGBM with Optuna TPE best params (see outputs/tuning/best_params.json)",
+  "cv_macro_f1": 0.9288293605656083,
+  "cv_macro_f1_std": 0.011349641697507693,
+  "cv_top1": 0.8825510574993626,
+  "cv_log_loss": 0.07680629505330197,
+  "train_macro_f1": 0.9427383543313478,
+  "test_accuracy": 0.9729511480581916,
+  "test_precision": 0.8940668939071155,
+  "test_recall": 0.8780270934672315,
+  "test_macro_f1": 0.9353149986091698,
+  "test_log_loss": 0.06626408309262516,
+  "test_top1": 0.8904510531542361,
+  "test_continuity": 0.9530751914008,
+  "train_time_s": 22.76230239868164,
+  "infer_ms_per_point": 0.0637838263103509
+}
